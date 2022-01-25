@@ -6,10 +6,11 @@
 //
 
 import UIKit
-import CoreData
 
 class TaskListViewController: UITableViewController {
-    private let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    
+    private let context = StorageManager.shared.persistentContainer.viewContext
+    
     
     private let cellID = "task"
     private var taskList: [Task] = []
@@ -87,6 +88,7 @@ class TaskListViewController: UITableViewController {
         }
         present(alert, animated: true)
     }
+    
     private func save(_ taskName: String) {
         
         let task = Task(context: context)
