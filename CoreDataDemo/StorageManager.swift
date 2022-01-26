@@ -7,16 +7,23 @@
 
 import Foundation
 import CoreData
+import UIKit
+
+enum DataError: Error {
+    case noData
+    case dontSaveData
+    case dontEditData
+    case dontDeleteData
+}
 
 class StorageManager {
     
     static let shared = StorageManager()
     private init() {}
     
-    
     // MARK: - Core Data stack
     
-    var persistentContainer: NSPersistentContainer = {
+    private var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "CoreDataDemo")
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
@@ -27,18 +34,75 @@ class StorageManager {
         return container
     }()
     
-    // MARK: - Core Data Saving support
-    
-    func saveContext () {
+    func fetchData(completion: @escaping(Result<[Task], DataError>) -> Void) {
+        
         let context = persistentContainer.viewContext
-        if context.hasChanges {
-            do {
-                try context.save()
-            } catch {
-                let nserror = error as NSError
-                fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
-            }
+        let fetchRequest = Task.fetchRequest()
+        
+        do {
+            let taskList = try context.fetch(fetchRequest)
+            completion(.success(taskList))
+        } catch {
+           print("Faild to fetch data", error)
+            completion(.failure(.noData))
         }
     }
     
+    func save(_ taskName: String) {
+        
+        let context = persistentContainer.viewContext
+        let task = Task(context: context)
+        
+        task.name = taskName
+        
+        do {
+            try context.save()
+        } catch {
+            print(error)
+        }
+    }
+    
+    func delete(in index: Int, with completion: @escaping(Result<[Task], DataError>) -> Void) {
+        
+        let context = persistentContainer.viewContext
+        let fetchRequest = Task.fetchRequest()
+        
+        do {
+            var taskList = try context.fetch(fetchRequest)
+            context.delete(taskList[index])
+            taskList.remove(at: index)
+            completion(.success(taskList))
+        } catch {
+            completion(.failure(.noData))
+            print(error)
+        }
+        
+        do {
+            try context.save()
+        } catch {
+            print(error)
+        }
+    }
+    
+    func edit(in index: Int, _ newTask: String, with completion: @escaping(Result<Task, DataError>) -> Void) {
+        
+        let context = persistentContainer.viewContext
+        let fetchRequest = Task.fetchRequest()
+        
+        do {
+            let taskList = try context.fetch(fetchRequest)
+            completion(.success(taskList[index]))
+            taskList[index].name = newTask
+            
+        } catch {
+            completion(.failure(.noData))
+            print(error)
+        }
+        
+        do {
+            try context.save()
+        } catch {
+            print(error)
+        }
+    }
 }

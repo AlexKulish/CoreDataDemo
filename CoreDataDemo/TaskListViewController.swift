@@ -9,8 +9,6 @@ import UIKit
 
 class TaskListViewController: UITableViewController {
     
-    private let context = StorageManager.shared.persistentContainer.viewContext
-    
     
     private let cellID = "task"
     private var taskList: [Task] = []
@@ -63,12 +61,13 @@ class TaskListViewController: UITableViewController {
     }
     
     private func fetchData() {
-        let fetchRequest = Task.fetchRequest()
-        
-        do {
-            taskList = try context.fetch(fetchRequest)
-        } catch {
-           print("Faild to fetch data", error)
+        StorageManager.shared.fetchData { result in
+            switch result {
+            case .success(let taskList):
+                self.taskList = taskList
+            case .failure(let error):
+                print(error)
+            }
         }
     }
     
@@ -90,19 +89,7 @@ class TaskListViewController: UITableViewController {
     }
     
     private func save(_ taskName: String) {
-        
-        let task = Task(context: context)
-        task.name = taskName
-        taskList.append(task)
-        
-        let cellIndex = IndexPath(row: taskList.count - 1, section: 0)
-        tableView.insertRows(at: [cellIndex], with: .automatic)
-        
-        do {
-            try context.save()
-        } catch let error {
-            print(error)
-        }
+        StorageManager.shared.save(taskName)
     }
 }
 
@@ -119,5 +106,9 @@ extension TaskListViewController {
         content.text = task.name
         cell.contentConfiguration = content
         return cell
+    }
+    
+    override func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
     }
 }
