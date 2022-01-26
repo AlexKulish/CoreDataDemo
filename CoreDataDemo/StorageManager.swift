@@ -21,6 +21,8 @@ class StorageManager {
     static let shared = StorageManager()
     private init() {}
     
+    lazy private var context = persistentContainer.viewContext
+    
     // MARK: - Core Data stack
     
     private var persistentContainer: NSPersistentContainer = {
@@ -36,7 +38,6 @@ class StorageManager {
     
     func fetchData(completion: @escaping(Result<[Task], DataError>) -> Void) {
         
-        let context = persistentContainer.viewContext
         let fetchRequest = Task.fetchRequest()
         
         do {
@@ -50,7 +51,6 @@ class StorageManager {
     
     func save(_ taskName: String) {
         
-        let context = persistentContainer.viewContext
         let task = Task(context: context)
         
         task.name = taskName
@@ -64,7 +64,6 @@ class StorageManager {
     
     func delete(in index: Int, with completion: @escaping(Result<[Task], DataError>) -> Void) {
         
-        let context = persistentContainer.viewContext
         let fetchRequest = Task.fetchRequest()
         
         do {
@@ -86,7 +85,6 @@ class StorageManager {
     
     func edit(in index: Int, _ newTask: String, with completion: @escaping(Result<Task, DataError>) -> Void) {
         
-        let context = persistentContainer.viewContext
         let fetchRequest = Task.fetchRequest()
         
         do {
@@ -105,4 +103,5 @@ class StorageManager {
             print(error)
         }
     }
+    
 }

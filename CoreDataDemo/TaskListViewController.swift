@@ -21,11 +21,11 @@ class TaskListViewController: UITableViewController {
         fetchData()
     }
     
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        fetchData()
-        tableView.reloadData()
-    }
+//    override func viewWillAppear(_ animated: Bool) {
+//        super.viewWillAppear(animated)
+//        fetchData()
+//        tableView.reloadData()
+//    }
  
     private func setupNavigationBar() {
         title = "Task List"
@@ -90,8 +90,11 @@ class TaskListViewController: UITableViewController {
     
     private func save(_ taskName: String) {
         StorageManager.shared.save(taskName)
+        fetchData()
+        tableView.reloadData()
     }
 }
+    
 
 extension TaskListViewController {
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -111,4 +114,40 @@ extension TaskListViewController {
     override func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
     }
+    
+    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+
+            let DeleteAction = UIContextualAction(style: .normal, title:  "Delete", handler: { (ac:UIContextualAction, view:UIView, success:(Bool) -> Void) in
+                StorageManager.shared.delete(in: indexPath.row) { result in
+                    switch result {
+                    case .success(let taskList):
+                        self.taskList = taskList
+                    case .failure(let error):
+                        print(error)
+                    }
+                }
+                tableView.deleteRows(at: [indexPath], with: .automatic)
+                success(true)
+            })
+            DeleteAction.backgroundColor = .red
+
+            let EditAction = UIContextualAction(style: .normal, title:  "Edit", handler: { (ac:UIContextualAction, view:UIView, success:(Bool) -> Void) in
+                
+                var newTask = self.taskList[indexPath.row].name
+                StorageManager.shared.edit(in: indexPath.row, newTask ?? "") { result in
+                    switch result {
+                    case .success(let taskList):
+                        newTask = taskList.name ?? ""
+                    case .failure(let error):
+                        print(error)
+                    }
+                }
+                self.showAlert(with: "Edit", and: "New edit")
+                success(true)
+            })
+            EditAction.backgroundColor = .orange
+
+            return UISwipeActionsConfiguration(actions: [DeleteAction, EditAction])
+        }
+        
 }
