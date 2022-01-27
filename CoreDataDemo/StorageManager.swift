@@ -36,6 +36,18 @@ class StorageManager {
         return container
     }()
     
+    func saveContext () {
+            let context = persistentContainer.viewContext
+            if context.hasChanges {
+                do {
+                    try context.save()
+                } catch {
+                    let nserror = error as NSError
+                    fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
+                }
+            }
+        }
+    
     func fetchData(completion: @escaping(Result<[Task], DataError>) -> Void) {
         
         let fetchRequest = Task.fetchRequest()
@@ -50,58 +62,18 @@ class StorageManager {
     }
     
     func save(_ taskName: String) {
-        
         let task = Task(context: context)
-        
         task.name = taskName
-        
-        do {
-            try context.save()
-        } catch {
-            print(error)
-        }
+        saveContext()
     }
     
-    func delete(in index: Int, with completion: @escaping(Result<[Task], DataError>) -> Void) {
-        
-        let fetchRequest = Task.fetchRequest()
-        
-        do {
-            var taskList = try context.fetch(fetchRequest)
-            context.delete(taskList[index])
-            taskList.remove(at: index)
-            completion(.success(taskList))
-        } catch {
-            completion(.failure(.noData))
-            print(error)
-        }
-        
-        do {
-            try context.save()
-        } catch {
-            print(error)
-        }
+    func delete(with task: Task) {
+        context.delete(task)
+        saveContext()
     }
     
-    func edit(in index: Int, _ newTask: String, with completion: @escaping(Result<Task, DataError>) -> Void) {
-        
-        let fetchRequest = Task.fetchRequest()
-        
-        do {
-            let taskList = try context.fetch(fetchRequest)
-            completion(.success(taskList[index]))
-            taskList[index].name = newTask
-            
-        } catch {
-            completion(.failure(.noData))
-            print(error)
-        }
-        
-        do {
-            try context.save()
-        } catch {
-            print(error)
-        }
+    func edit(_ taskName: Task, _ newTask: String) {
+        taskName.name = newTask
+        saveContext()
     }
-    
 }

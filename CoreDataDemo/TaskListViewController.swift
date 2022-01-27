@@ -88,6 +88,26 @@ class TaskListViewController: UITableViewController {
         present(alert, animated: true)
     }
     
+    private func showEditAlert(with title: String, and message: String, selectedRow: Int) {
+        
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        let saveAction = UIAlertAction(title: "Edit", style: .default) { _ in
+            guard let newTask = alert.textFields?.first?.text, !newTask.isEmpty else { return }
+            StorageManager.shared.edit(self.taskList[selectedRow], newTask)
+            self.taskList[selectedRow].name = newTask
+            self.tableView.reloadData()
+        }
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
+        
+        alert.addAction(saveAction)
+        alert.addAction(cancelAction)
+        alert.addTextField { textField in
+            textField.placeholder = "Edit Task"
+        }
+        present(alert, animated: true)
+    }
+    
     private func save(_ taskName: String) {
         StorageManager.shared.save(taskName)
         fetchData()
@@ -111,43 +131,26 @@ extension TaskListViewController {
         return cell
     }
     
-    override func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-
-            let DeleteAction = UIContextualAction(style: .normal, title:  "Delete", handler: { (ac:UIContextualAction, view:UIView, success:(Bool) -> Void) in
-                StorageManager.shared.delete(in: indexPath.row) { result in
-                    switch result {
-                    case .success(let taskList):
-                        self.taskList = taskList
-                    case .failure(let error):
-                        print(error)
-                    }
-                }
-                tableView.deleteRows(at: [indexPath], with: .automatic)
-                success(true)
-            })
-            DeleteAction.backgroundColor = .red
-
-            let EditAction = UIContextualAction(style: .normal, title:  "Edit", handler: { (ac:UIContextualAction, view:UIView, success:(Bool) -> Void) in
-                
-                var newTask = self.taskList[indexPath.row].name
-                StorageManager.shared.edit(in: indexPath.row, newTask ?? "") { result in
-                    switch result {
-                    case .success(let taskList):
-                        newTask = taskList.name ?? ""
-                    case .failure(let error):
-                        print(error)
-                    }
-                }
-                self.showAlert(with: "Edit", and: "New edit")
-                success(true)
-            })
-            EditAction.backgroundColor = .orange
-
+        
+        let DeleteAction = UIContextualAction(style: .normal, title: "Delete") { (_, _, succes) in
+            StorageManager.shared.delete(with: self.taskList[indexPath.row])
+            self.taskList.remove(at: indexPath.row)
+            tableView.deleteRows(at: [indexPath], with: .automatic)
+            succes(true)
+        }
+        DeleteAction.backgroundColor = .red
+        
+        let EditAction = UIContextualAction(style: .normal, title: "Edit") { _, _, succes in
+            self.showEditAlert(with: "Edit Task", and: "What do you want edit?", selectedRow: indexPath.row)
+            succes(true)
+        }
+        EditAction.backgroundColor = .orange
+        
             return UISwipeActionsConfiguration(actions: [DeleteAction, EditAction])
         }
-        
 }
